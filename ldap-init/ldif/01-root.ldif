@@ -1,0 +1,14 @@
+dn: dc=prodrigu,dc=local
+objectClass: top
+objectClass: domain
+dc: prodrigu
+
+dn: ou=Users,dc=prodrigu,dc=local
+objectClass: top
+objectClass: organizationalUnit
+ou: Users
+
+dn: ou=Groups,dc=prodrigu,dc=local
+objectClass: top
+objectClass: organizationalUnit
+ou: Groups

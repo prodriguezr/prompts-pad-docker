@@ -1,0 +1,70 @@
+services:
+  ldap:
+    image: bitnami/openldap:latest
+    container_name: prompts-ldap
+    ports:
+      - '1389:1389'
+    environment:
+      LDAP_SKIP_DEFAULT_TREE: yes
+      LDAP_ADMIN_USERNAME: admin
+      LDAP_ADMIN_PASSWORD: adminpassword
+      LDAP_ROOT: dc=prodrigu,dc=local
+    volumes:
+      - ldap-data:/bitnami/openldap
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'ldapsearch',
+          '-x',
+          '-H',
+          'ldap://localhost:1389',
+          '-D',
+          'cn=admin,dc=prodrigu,dc=local',
+          '-w',
+          'adminpassword',
+          '-b',
+          'dc=prodrigu,dc=local',
+        ]
+      interval: 5s
+      retries: 10
+    networks:
+      - app-net
+
+  ldap-init:
+    build:
+      context: ./ldap-init
+    depends_on:
+      - ldap
+    networks:
+      - app-net
+
+  api:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: prompts-api
+    ports:
+      - '5035:80'
+      - '5443:443'
+    volumes:
+      - ../backend:/src
+      - ./https/cert.pfx:/https/cert.pfx:ro
+    environment:
+      ENABLE_SWAGGER: ${ENABLE_SWAGGER}
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: 'http://+:8080;https://+:8443'
+      CertificateSettings__Path: /https/cert.pfx
+      CertificateSettings__Password: ${CERT_PASSWORD}
+    depends_on:
+      ldap-init:
+        condition: service_completed_successfully
+    networks:
+      - app-net
+
+volumes:
+  ldap-data:
+
+networks:
+  app-net:
+    driver: bridge
